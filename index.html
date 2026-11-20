@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#081c15"><meta name="description" content="Hệ thống quản lý Vựa Mít Phúc Vinh">
+<link rel="manifest" href="./manifest.json"><link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
+<title>Vựa Mít Phúc Vinh</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={theme:{extend:{colors:{forest:'#1b4332',leaf:'#2d6a4f',night:'#081c15',deep:'#0b130b'}}}}</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<link rel="stylesheet" href="./styles.css">
+
+</head>
+<body>
+
+<!-- MÀN HÌNH KHỞI ĐỘNG VỰA MÍT PHÚC VINH -->
+<style>
+#startup-intro {
+    position: fixed;
+    inset: 0;
+    z-index: 999999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background:
+        radial-gradient(ellipse at 50% 45%, #1b6946 0%, transparent 48%),
+        linear-gradient(145deg, #06180f, #0b2b1c 55%, #04130c);
+    animation: introFadeOut .7s ease 2.1s forwards;
+}
+
+#startup-intro .glow {
+    position: absolute;
+    width: 340px;
+    height: 340px;
+    border-radius: 50%;
+    background: #52d68b;
+    filter: blur(100px);
+    opacity: .2;
+    animation: introGlow 2.5s ease-in-out infinite alternate;
+}
+
+#startup-intro .glow-two {
+    width: 220px;
+    height: 220px;
+    background: #b7e7a2;
+    transform: translate(120px, -100px);
+    animation-delay: .5s;
+}
+
+#startup-intro .intro-content {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    padding: 25px;
+    animation: introAppear 1s ease both;
+}
+
+#startup-intro .intro-logo {
+    width: 105px;
+    height: 105px;
+    margin: 0 auto 24px;
+    display: grid;
+    place-items: center;
+    border: 1px solid #b7e7a277;
+    border-radius: 30px;
+    background: linear-gradient(145deg, #b7d7a8, #2d6a4f);
+    box-shadow: 0 0 35px #69db9b66,
+                inset 0 0 20px #ffffff44;
+    font-size: 49px;
+    animation: logoFloat 2s ease-in-out infinite;
+}
+
+#startup-intro h1 {
+    color: #f1fff3;
+    font-family: Georgia, serif;
+    font-size: clamp(27px, 6vw, 40px);
+    font-weight: 600;
+    letter-spacing: 1px;
+    margin: 0 0 12px;
+    text-shadow: 0 0 25px #9ce9b4;
+}
+
+#startup-intro p {
+    color: #b7d7c1;
+    font-size: 11px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin: 0;
+}
+
+#startup-intro .intro-line {
+    width: 150px;
+    height: 3px;
+    border-radius: 10px;
+    margin: 35px auto 0;
+    overflow: hidden;
+    background: #ffffff22;
+}
+
+#startup-intro .intro-line::after {
+    content: "";
+    display: block;
+    width: 45%;
+    height: 100%;
+    border-radius: inherit;
+    background: #b7e7a2;
+    box-shadow: 0 0 12px #b7e7a2;
+    animation: introLoading 1.7s ease-in-out infinite;
+}
+
+#startup-intro .spark {
+    position: absolute;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #c8f5b9;
+    box-shadow: 0 0 14px #a7ffc3;
+    animation: sparkMove 2.5s ease-in-out infinite;
+}
+
+#startup-intro .s1 { left: 15%; top: 25%; }
+#startup-intro .s2 { right: 18%; top: 32%; animation-delay: .5s; }
+#startup-intro .s3 { left: 25%; bottom: 20%; animation-delay: .8s; }
+#startup-intro .s4 { right: 24%; bottom: 25%; animation-delay: .3s; }
+
+@keyframes introAppear {
+    from { opacity: 0; transform: translateY(25px) scale(.94); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes logoFloat {
+    0%, 100% { transform: translateY(0) rotate(-2deg); }
+    50% { transform: translateY(-9px) rotate(2deg); }
+}
+
+@keyframes introGlow {
+    from { transform: scale(.8); opacity: .12; }
+    to { transform: scale(1.3); opacity: .3; }
+}
+
+@keyframes introLoading {
+    from { transform: translateX(-120%); }
+    to { transform: translateX(230%); }
+}
+
+@keyframes sparkMove {
+    0%, 100% { opacity: .2; transform: translateY(10px) scale(.7); }
+    50% { opacity: 1; transform: translateY(-20px) scale(1.4); }
+}
+
+@keyframes introFadeOut {
+    to { opacity: 0; visibility: hidden; pointer-events: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #startup-intro,
+    #startup-intro * {
+        animation-duration: .01ms !important;
+    }
+}
+
+/* ===== GIAO DIỆN TÌM KIẾM KHÁCH HÀNG ===== */
+
+.customer-picker {
+  position: relative;
+  width: 100%;
+  z-index: 20;
+}
+
+.customer-search-row {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  width: 100%;
+}
+
+.customer-search-box {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.customer-search-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #72917d;
+  font-size: 23px;
+  pointer-events: none;
+}
+
+.customer-search-box input {
+  width: 100%;
+  height: 54px;
+  box-sizing: border-box;
+  padding: 0 16px 0 45px;
+  border: 1px solid #c8dfce;
+  border-radius: 15px;
+  outline: none;
+  background: #fff;
+  color: #203b2b;
+  font-size: 15px;
+  transition: .2s ease;
+}
+
+.customer-search-box input:focus {
+  border-color: #39865a;
+  box-shadow: 0 0 0 4px rgba(45, 106, 79, .10);
+}
+
+.customer-search-box input::placeholder {
+  color: #91a497;
+}
+
+.customer-show-all-btn {
+  flex-shrink: 0;
+  min-width: 160px;
+  padding: 0 17px;
+  border: 1px solid #b9d8c1;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #edf8ef, #dcefe0);
+  color: #245b39;
+  font-size: 14px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: .2s ease;
+}
+
+.customer-show-all-btn:hover,
+.customer-show-all-btn[aria-expanded="true"] {
+  background: #2d6a4f;
+  color: white;
+  border-color: #2d6a4f;
+  box-shadow: 0 5px 15px rgba(45, 106, 79, .18);
+}
+
+.customer-show-all-btn span {
+  margin-right: 5px;
+  font-size: 17px;
+}
+
+.customer-native-select {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.customer-search-results {
+  position: absolute;
+  top: calc(100% + 9px);
+  left: 0;
+  right: 0;
+  z-index: 999;
+  max-height: 340px;
+  overflow-y: auto;
+  padding: 8px;
+  border: 1px solid #dce9df;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 14px 38px rgba(18, 52, 30, .17);
+  animation: customerDropdown .18s ease;
+}
+
+@keyframes customerDropdown {
+  from {
+    opacity: 0;
+    transform: translateY(-7px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.customer-search-results.hidden {
+  display: none !important;
+}
+
+.customer-search-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  color: #718678;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: .8px;
+}
+
+.customer-search-heading span {
+  padding: 3px 9px;
+  border-radius: 20px;
+  background: #edf6ef;
+  color: #34734a;
+}
+
+.customer-search-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 11px;
+  background: transparent;
+  color: #203b2b;
+  text-align: left;
+  cursor: pointer;
+  transition: background .15s ease;
+}
+
+.customer-search-item:hover,
+.customer-search-item.active {
+  background: #edf7ef;
+}
+
+.customer-result-avatar {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #d7efdc, #a8d6b3);
+  color: #245b39;
+  font-size: 17px;
+  font-weight: 750;
+}
+
+.customer-result-copy {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  gap: 3px;
+}
+
+.customer-result-copy strong {
+  overflow: hidden;
+  color: #1d3928;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.customer-result-copy span {
+  color: #587363;
+  font-size: 13px;
+}
+
+.customer-result-copy small {
+  overflow: hidden;
+  color: #91a096;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.customer-search-item mark {
+  padding: 0 2px;
+  border-radius: 3px;
+  background: #fff0ad;
+  color: #674c00;
+}
+
+.customer-result-enter {
+  color: #9aafa0;
+  font-size: 18px;
+}
+
+.customer-search-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 30px 15px;
+  color: #718678;
+  text-align: center;
+}
+
+.customer-search-empty b {
+  color: #365b42;
+}
+
+@media (max-width: 600px) {
+  .customer-search-row {
+    flex-direction: column;
+  }
+
+  .customer-show-all-btn {
+    width: 100%;
+    min-height: 45px;
+  }
+
+  .customer-search-results {
+    max-height: 280px;
+  }
+}
+
+</style>
+
+<div id="startup-intro">
+    <div class="glow"></div>
+    <div class="glow glow-two"></div>
+
+    <span class="spark s1"></span>
+    <span class="spark s2"></span>
+    <span class="spark s3"></span>
+    <span class="spark s4"></span>
+
+    <div class="intro-content">
+        <div class="intro-logo">🌿</div>
+        <h1>Vựa Mít Phúc Vinh</h1>
+        <p>Chất lượng · Uy tín · Tận tâm</p>
+        <div class="intro-line"></div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const intro = document.getElementById("startup-intro");
+
+    document.body.style.overflow = "hidden";
+
+    setTimeout(function () {
+        if (intro) intro.remove();
+        document.body.style.overflow = "";
+    }, 2900);
+})();
+</script>
+<!-- KẾT THÚC MÀN HÌNH KHỞI ĐỘNG -->
+
+<div id="toast" class="toast"></div>
+<section id="authView" class="auth-shell">
+  <div class="auth-card glass">
+    <div class="brand-mark">PV</div><p class="eyebrow">HỆ THỐNG QUẢN LÝ</p><h1>Vựa Mít <span>Phúc Vinh</span></h1>
+    <p class="muted mb-7">Quản lý thu mua tinh gọn · Minh bạch · Chính xác</p>
+    <div class="auth-tabs"><button class="active" data-auth-tab="login">Đăng nhập</button><button data-auth-tab="register">Đăng ký</button></div>
+    <form id="loginForm" class="auth-form">
+      <label>Email
+    <div class="login-email-wrap">
+        <input
+            id="loginEmail"
+            type="text"
+            required
+            autocomplete="username"
+            placeholder="Nhập tên tài khoản"
+        >
+        <span>@gmail.com</span>
+    </div>
+</label>
+      <label>Mật khẩu<input id="loginPassword" type="password" required minlength="6" maxlength="6" placeholder="Đúng 6 ký tự" autocomplete="current-password"></label>
+      <button class="btn-primary w-full" type="submit">Đăng nhập <span>→</span></button>
+    </form>
+    <form id="registerForm" class="auth-form hidden">
+      <label>Email<input id="regEmail" type="email" required placeholder="name@email.com"></label>
+      <label>Họ và tên<input id="regName" required maxlength="100" placeholder="Nguyễn Văn A"></label>
+      <label>Số điện thoại<input id="regPhone" required type="tel" maxlength="20" placeholder="09xxxxxxxx"></label>
+      <label>Mật khẩu (đúng 6 ký tự)<input id="regPassword" type="password" required minlength="6" maxlength="6" pattern=".{6}" placeholder="6 chữ hoặc số"></label>
+      <button class="btn-primary w-full" type="submit">Tạo tài khoản <span>→</span></button>
+    </form>
+    <p class="tiny mt-5">Bằng việc tiếp tục, bạn đồng ý sử dụng hệ thống Vựa Mít Phúc Vinh.</p>
+  </div>
+</section>
+<div id="appView" class="app-shell hidden">
+  <aside class="sidebar">
+    <div class="brand-row"><div class="brand-mark small">PV</div><div><b>PHÚC VINH</b><small>Vựa mít Phúc Vinh</small></div></div>
+    <div class="profile-mini"><div class="avatar" id="sideAvatar">PV</div><div><b id="sideName">Người dùng</b><small id="sideRole">Khách hàng</small></div></div>
+    <nav id="mainNav">
+      <button class="nav-item active" data-page="notifications"><span>🔔</span> Thông báo</button>
+      <button class="nav-item" data-page="invoices"><span>🧾</span> Hóa đơn</button>
+      <button class="nav-item admin-only hidden" data-page="create"><span>📝</span> Lập hóa đơn</button>
+      <button class="nav-item" data-page="settings"><span>⚙️</span> Cài đặt</button>
+    </nav>
+    <div class="sidebar-bottom"><div class="secure-note">● Hệ thống đang bảo mật</div><button id="logoutBtn" class="nav-item logout">🚪︎ Đăng xuất</button></div>
+  </aside>
+  <main class="main-area">
+    <header class="topbar"><div><p class="eyebrow">VỰA MÍT PHÚC VINH</p><h2 id="pageTitle">Thông báo</h2></div><div class="top-actions"><button id="refreshPageBtn" class="btn-ghost refresh-page-btn" type="button">↻ Tải lại</button><span class="online-pill">● Trực tuyến</span><button id="themeQuick" class="icon-btn" title="Đổi giao diện">◐</button><div class="avatar" id="topAvatar">PV</div></div></header>
+    <section id="page-notifications" class="page active">
+      <div class="welcome-panel"><div><p class="eyebrow">TRUNG TÂM THÔNG TIN</p><h3>Chào mừng đến với<br><em>Phúc Vinh.</em></h3><p>Cập nhật những thông tin mới nhất từ vựa.</p></div><div class="welcome-orb">✦</div></div>
+      <div class="section-heading"><div><p class="eyebrow">CẬP NHẬT MỚI</p><h3>Thông báo</h3></div><button id="addNoticeBtn" class="btn-secondary admin-only hidden">＋ Thêm thông báo</button></div>
+      <div id="noticeList" class="notice-grid"><div class="empty-state">Đang tải thông báo...</div></div>
+    </section>
+    <section id="page-invoices" class="page">
+      <div class="section-heading invoice-heading"><div><p class="eyebrow">LỊCH SỬ GIAO DỊCH</p><h3>Danh sách hóa đơn</h3></div><div class="invoice-heading-actions"><span id="invoiceCount" class="count-pill">0 hóa đơn</span><button id="openInvoiceStats" class="btn-secondary admin-only hidden" type="button">ılılıl Thống kê</button><button id="deleteAllInvoices" class="btn-danger" type="button">🗑︎ Xóa tất cả hóa đơn</button></div></div>
+      <div class="filter-bar admin-only hidden"><label>Từ ngày<input id="filterFrom" type="date"></label><label>Đến ngày<input id="filterTo" type="date"></label><label>Số điện thoại<input id="filterPhone" placeholder="Lọc theo SĐT"></label><button id="filterBtn" class="btn-secondary">⥮ Lọc</button><button id="clearFilterBtn" class="btn-ghost">Xóa lọc</button></div>
+      <div id="invoiceList" class="invoice-list"><div class="empty-state">Đang tải hóa đơn...</div></div>
+    </section>
+    <section id="page-create" class="page">
+      <div class="section-heading"><div><p class="eyebrow">GIAO DỊCH MỚI</p><h3>Lập hóa đơn</h3></div><span class="count-pill">ADMIN</span></div>
+      <div class="panel invoice-editor">
+        
+<div class="form-grid">
+  <label>Khách hàng
+    <div class="customer-picker">
+      <div class="customer-search-row">
+        <div class="customer-search-box">
+          <span class="customer-search-icon">⌕</span>
+          <input
+            id="customerSearch"
+            type="search"
+            placeholder="Tìm tên, số điện thoại hoặc email..."
+            autocomplete="off"
+            aria-label="Tìm kiếm khách hàng"
+            aria-controls="customerSearchResults"
+            aria-autocomplete="list"
+          >
+        </div>
+
+        <button
+          type="button"
+          id="showAllCustomersBtn"
+          class="customer-show-all-btn"
+          aria-expanded="false"
+        >
+          <span>☷</span> Tất cả khách hàng
+        </button>
+      </div>
+
+      <div
+        id="customerSearchResults"
+        class="customer-search-results hidden"
+        role="listbox"
+      ></div>
+
+      <select
+        id="customerSelect"
+        class="customer-native-select"
+        required
+        aria-hidden="true"
+        tabindex="-1"
+      >
+        <option value="">Chọn khách hàng...</option>
+      </select>
+    </div>
+  </label>
+
+  <div class="customer-summary" id="customerSummary">
+    Thông tin khách hàng sẽ hiển thị tại đây.
+  </div>
+</div>
+
+        <div class="table-wrap"><table class="data-table" id="itemTable"><thead><tr><th>STT</th><th>Loại</th><th>Số lượng</th><th>Đơn giá</th><th>Thành tiền</th><th></th></tr></thead><tbody id="itemRows"></tbody></table></div>
+        <button id="addItemBtn" class="btn-ghost mt-3">↳ Thêm dòng sản phẩm</button>
+        <div class="invoice-bottom"><div class="muted">Người lập: <b id="creatorName">—</b></div><div class="total-box"><small>TỔNG THANH TOÁN</small><strong id="grandTotal">0 ₫</strong></div></div>
+        <button id="saveInvoiceBtn" class="btn-primary mt-5">Hoàn tất hóa đơn ⌲</button>
+      </div>
+    </section>
+    <section id="page-settings" class="page">
+      <div class="section-heading"><div><p class="eyebrow">CÁ NHÂN HÓA</p><h3>Cài đặt</h3></div></div>
+      <div class="settings-grid">
+        <div class="panel"><h4>Thông tin tài khoản</h4><form id="profileForm" class="stack-form"><label>Họ và tên<input id="settingName" required maxlength="100"></label><label>Email<input id="settingEmail" disabled></label><label>Số điện thoại<input id="settingPhone" disabled></label><button class="btn-primary">Lưu thay đổi</button></form></div>
+        <div class="panel"><h4>Bảo mật & hiển thị</h4><form id="passwordForm" class="stack-form"><label>Mật khẩu hiện tại<input id="currentPassword" type="password" required autocomplete="current-password" placeholder="Nhập mật khẩu cũ"></label><label>Mật khẩu mới (đúng 6 ký tự)<input id="newPassword" type="password" minlength="6" maxlength="6" pattern=".{6}" required></label><button class="btn-secondary">Đổi mật khẩu</button></form><div class="setting-row"><div><b>🌓︎ Giao diện tối/sáng</b><small>Phong cách xanh rừng trầm</small></div><label class="switch"><input type="checkbox" id="themeToggle"><span></span></label></div><div class="setting-row"><div><b>🔔︎ Thông báo trình duyệt</b><small>Cho phép hiển thị thông báo</small></div><label class="switch"><input type="checkbox" id="pushToggle"><span></span></label></div></div>
+      </div>
+      <div class="panel danger-panel"><h4>Khu vực tài khoản</h4><p class="muted">Đăng xuất khỏi thiết bị hoặc xóa vĩnh viễn tài khoản của bạn.</p><div class="danger-actions"><button id="settingsLogout" class="btn-ghost">🚪︎ Đăng xuất</button><button id="deleteAccountBtn" class="btn-danger">Xóa tài khoản vĩnh viễn</button></div></div>
+      <div id="customerAdmin" class="panel admin-only hidden mt-5"><div class="section-heading"><div><p class="eyebrow">QUẢN TRỊ</p><h4>Quản lý tài khoản khách hàng</h4></div><button id="refreshCustomersAdmin" class="btn-ghost">↻ Làm mới</button></div><button id="openCustomerManagerBtn" class="admin-manager-launch"><span class="admin-manager-icon">👤︎</span><span><b>Quản lý khách hàng</b><small>Xem, sửa và xóa tài khoản khách hàng</small></span><span class="admin-manager-arrow">›</span></button></div>
+      <div id="complaintAdmin" class="panel admin-only hidden mt-5"><div class="section-heading"><h4>Khiếu nại của khách hàng</h4><button id="refreshComplaints" class="btn-ghost">↻ Làm mới</button></div><div id="complaintList"></div></div>
+    </section>
+  </main>
+</div>
+<div id="modal" class="modal hidden"><div class="modal-card"><button id="modalClose" class="modal-close">×</button><div id="modalContent"></div></div></div>
+<div id="printArea" class="print-area"></div>
+<script src="./config.js"></script><script src="./app.js"></script>
+</body></html>
